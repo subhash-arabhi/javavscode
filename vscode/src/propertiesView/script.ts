@@ -18,7 +18,7 @@
  */
 
 import { provideVSCodeDesignSystem, vsCodeButton, vsCodeTextField, vsCodeDivider, vsCodeCheckbox, Button, TextField, Checkbox } from "@vscode/webview-ui-toolkit";
-import { isError, asClass, isClass } from "../typesUtil";
+import { isError, asClass, isClass } from "../utils/typesUtil";
 import { CommandKey, Message, PropertyMessage } from "./controlTypes";
 
 provideVSCodeDesignSystem().register(vsCodeButton(), vsCodeTextField(), vsCodeDivider(), vsCodeCheckbox());

@@ -22,7 +22,7 @@ import * as https from 'https';
 import * as fs from 'fs';
 import { promisify } from "util";
 import * as crypto from 'crypto';
-import { l10n } from './localiser';
+import { l10n } from './views/localiser';
 
 class InputFlowAction {
 	static back = new InputFlowAction();

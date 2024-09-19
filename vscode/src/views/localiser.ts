@@ -4,7 +4,7 @@
 import * as l10nLib from '@vscode/l10n'
 
 import * as vscode from 'vscode';
-import { ORACLE_VSCODE_EXTENSION_ID } from './constants';
+import { ORACLE_VSCODE_EXTENSION_ID } from '../constants';
 
 const DEFAULT_LANGAUGE = "en";
 const DEFAULT_BUNDLE_FILE = `l10n/bundle.l10n.${DEFAULT_LANGAUGE}.json`;

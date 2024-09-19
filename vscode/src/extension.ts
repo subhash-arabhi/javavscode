@@ -54,21 +54,21 @@ import * as path from 'path';
 import { ChildProcess } from 'child_process';
 import * as vscode from 'vscode';
 import * as ls from 'vscode-languageserver-protocol';
-import * as launcher from './nbcode';
-import { StreamDebugAdapter} from './streamDebugAdapter';
-import { NbTestAdapter } from './testAdapter';
+import * as launcher from './lsp/nbcode';
+import { StreamDebugAdapter} from './debugger/streamDebugAdapter';
+import { NbTestAdapter } from './views/testAdapter';
 import { asRanges, StatusMessageRequest, ShowStatusMessageParams, QuickPickRequest, InputBoxRequest, MutliStepInputRequest, TestProgressNotification, DebugConnector,
          TextEditorDecorationCreateRequest, TextEditorDecorationSetNotification, TextEditorDecorationDisposeNotification, HtmlPageRequest, HtmlPageParams,
          ExecInHtmlPageRequest, SetTextEditorDecorationParams, ProjectActionParams, UpdateConfigurationRequest, QuickPickStep, InputBoxStep, SaveDocumentsRequest, SaveDocumentRequestParams
-} from './protocol';
-import * as launchConfigurations from './launchConfigurations';
-import { createTreeViewService, TreeViewService, Visualizer } from './explorer';
-import { initializeRunConfiguration, runConfigurationProvider, runConfigurationNodeProvider, configureRunSettings, runConfigurationUpdateAll } from './runConfiguration';
+} from './lsp/protocol';
+import * as launchConfigurations from './views/launchConfigurations';
+import { createTreeViewService, TreeViewService, Visualizer } from './views/explorer';
+import { initializeRunConfiguration, runConfigurationProvider, runConfigurationNodeProvider, configureRunSettings, runConfigurationUpdateAll } from './views/runConfiguration';
 import { InputStep, MultiStepInput } from './utils';
 import { PropertiesView } from './propertiesView/propertiesView';
-import { l10n } from './localiser';
+import { l10n } from './views/localiser';
 import { ORACLE_VSCODE_EXTENSION_ID,NODE_WINDOWS_LABEL } from './constants';
-import { JdkDownloaderView } from './jdkDownloader/view';
+import { JdkDownloaderView } from './webViews/jdkDownloader/view';
 
 const API_VERSION : string = "1.0";
 const SERVER_NAME : string = "Oracle Java SE Language Server";

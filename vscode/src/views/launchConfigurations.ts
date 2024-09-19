@@ -25,8 +25,8 @@ import { commands, CompletionItem, CompletionList, ExtensionContext, languages, 
 import { InsertTextFormat } from 'vscode-languageclient';
 import * as jsoncp from 'jsonc-parser';
 import * as fs from 'fs';
-import { COMMAND_PREFIX } from "./extension";
-import { l10n } from './localiser';
+import { COMMAND_PREFIX } from "../extension";
+import { l10n } from '../views/localiser';
 export function updateLaunchConfig() {
     workspace.findFiles('.vscode/launch.json').then(async files => {
 

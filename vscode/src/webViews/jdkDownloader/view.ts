@@ -1,9 +1,9 @@
-import { OPEN_JDK_VERSION_DOWNLOAD_LINKS, ORACLE_JDK_DOWNLOAD_VERSIONS } from '../constants';
+import { OPEN_JDK_VERSION_DOWNLOAD_LINKS, ORACLE_JDK_DOWNLOAD_VERSIONS } from '../../constants';
 import { OutputChannel, Uri, ViewColumn, WebviewPanel, window } from 'vscode';
 import * as os from 'os';
 import { JdkDownloaderAction } from './action';
 import { downloaderCss } from './styles';
-import { l10n } from '../localiser';
+import { l10n } from '../../views/localiser';
 
 export class JdkDownloaderView {
     public static readonly OPEN_JDK_LABEL = "OpenJDK";

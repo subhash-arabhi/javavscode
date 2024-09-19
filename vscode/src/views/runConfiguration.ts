@@ -21,7 +21,7 @@
 
 import * as vscode from 'vscode';
 import { homedir } from 'os';
-import { l10n } from './localiser';
+import { l10n } from '../views/localiser';
 
 export async function initializeRunConfiguration(): Promise<boolean> {
     if (vscode.workspace.name || vscode.workspace.workspaceFile) {

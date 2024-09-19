@@ -27,7 +27,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as myExtension from '../../extension';
-import * as myExplorer from '../../explorer';
+import * as myExplorer from '../../views/explorer';
 
 import { CodeAction, commands, extensions, Selection, Uri, window, workspace, TreeItem } from 'vscode';
 import { assertWorkspace, dumpJava, getFilePaths, openFile, prepareProject, replaceCode} from './testutils';
