@@ -69,6 +69,7 @@ import { PropertiesView } from './propertiesView/propertiesView';
 import { l10n } from './views/localiser';
 import { ORACLE_VSCODE_EXTENSION_ID,NODE_WINDOWS_LABEL } from './constants';
 import { JdkDownloaderView } from './webViews/jdkDownloader/view';
+import { builtInCommands, extCommands, nbCommands } from './commands/commands';
 
 const API_VERSION : string = "1.0";
 const SERVER_NAME : string = "Oracle Java SE Language Server";
@@ -274,7 +275,7 @@ function wrapProjectActionWithProgress(action : string, configuration : string |
             items.push(item);
         }
     }
-    return wrapCommandWithProgress(COMMAND_PREFIX + '.project.run.action', title, log, showOutput, actionParams, ...items);
+    return wrapCommandWithProgress(nbCommands.runProject, title, log, showOutput, actionParams, ...items);
 }
 
 function wrapCommandWithProgress(lsCommand : string, title : string, log? : vscode.OutputChannel, showOutput? : boolean, ...args : any[]) : Thenable<unknown> {
@@ -383,18 +384,18 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
 		if (initialized) {
 			context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider(COMMAND_PREFIX, runConfigurationProvider));
 			context.subscriptions.push(vscode.window.registerTreeDataProvider('run-config', runConfigurationNodeProvider));
-			context.subscriptions.push(vscode.commands.registerCommand(COMMAND_PREFIX + '.workspace.configureRunSettings', (...params: any[]) => {
+			context.subscriptions.push(vscode.commands.registerCommand(extCommands.configureRunSettings, (...params: any[]) => {
 				configureRunSettings(context, params);
 			}));
-			vscode.commands.executeCommand('setContext', 'runConfigurationInitialized', true);
+			vscode.commands.executeCommand(builtInCommands.setCustomContext, 'runConfigurationInitialized', true);
 		}
 	});
 
     // register commands
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.workspace.new', async (ctx, template) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.newFromTemplate, async (ctx, template) => {
         let c : LanguageClient = await client;
         const commands = await vscode.commands.getCommands();
-        if (commands.includes(COMMAND_PREFIX + '.new.from.template')) {
+        if (commands.includes(nbCommands.newFromTemplate)) {
             const workspaces=workspace.workspaceFolders;
 
             if(!workspaces) {
@@ -409,8 +410,8 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
                     await fs.promises.mkdir(folderPath);
                 }
                 const folderPathUri = vscode.Uri.file(folderPath);
-                await vscode.commands.executeCommand(COMMAND_PREFIX + '.new.from.template', folderPathUri.toString());
-                await vscode.commands.executeCommand(`vscode.openFolder`, folderPathUri);
+                await vscode.commands.executeCommand(nbCommands.newFromTemplate, folderPathUri.toString());
+                await vscode.commands.executeCommand(builtInCommands.openFolder, folderPathUri);
 
                 return;
             }
@@ -421,7 +422,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
                 params.push(template);
             }
             params.push(contextUri(ctx)?.toString(), vscode.window.activeTextEditor?.document?.uri?.toString());
-            const res = await vscode.commands.executeCommand(COMMAND_PREFIX + '.new.from.template', ...params);
+            const res = await vscode.commands.executeCommand(nbCommands.newFromTemplate, ...params);
             
             if (typeof res === 'string') {
                 let newFile = vscode.Uri.parse(res as string);
@@ -438,11 +439,11 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
             throw l10n.value("jdk.extenstion.error_msg.doesntSupportNewTeamplate",{client:c});
         }
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.workspace.newproject', async (ctx) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.newProject, async (ctx) => {
         let c : LanguageClient = await client;
         const commands = await vscode.commands.getCommands();
-        if (commands.includes(COMMAND_PREFIX + '.new.project')) {
-            const res = await vscode.commands.executeCommand(COMMAND_PREFIX + '.new.project', contextUri(ctx)?.toString());
+        if (commands.includes(nbCommands.newProject)) {
+            const res = await vscode.commands.executeCommand(nbCommands.newProject, contextUri(ctx)?.toString());
             if (typeof res === 'string') {
                 let newProject = vscode.Uri.parse(res as string);
 
@@ -451,7 +452,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
 
                 const value = await vscode.window.showInformationMessage(l10n.value("jdk.extension.message.newProjectCreated"), OPEN_IN_NEW_WINDOW, ADD_TO_CURRENT_WORKSPACE);
                 if (value === OPEN_IN_NEW_WINDOW) {
-                    await vscode.commands.executeCommand('vscode.openFolder', newProject, true);
+                    await vscode.commands.executeCommand(builtInCommands.openFolder, newProject, true);
                 } else if (value === ADD_TO_CURRENT_WORKSPACE) {
                     vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders.length : 0, undefined, { uri: newProject });
                 }
@@ -461,12 +462,12 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
         }
     }));
 
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.open.test', async (ctx) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.openTest, async (ctx) => {
         let c: LanguageClient = await client;
         const commands = await vscode.commands.getCommands();
-        if (commands.includes(COMMAND_PREFIX + '.go.to.test')) {
+        if (commands.includes(nbCommands.goToTest)) {
             try {
-                const res: any = await vscode.commands.executeCommand(COMMAND_PREFIX + '.go.to.test', contextUri(ctx)?.toString());
+                const res: any = await vscode.commands.executeCommand(nbCommands.goToTest, contextUri(ctx)?.toString());
                 if("errorMessage" in res){
                     throw new Error(res.errorMessage);
                 }
@@ -516,7 +517,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
         }
     }));
 
-    context.subscriptions.push(vscode.commands.registerCommand(COMMAND_PREFIX + ".delete.cache", async () => {
+    context.subscriptions.push(vscode.commands.registerCommand(extCommands.deleteCache, async () => {
         const storagePath = context.storageUri?.fsPath;
         if (!storagePath) {
             vscode.window.showErrorMessage(l10n.value("jdk.extenstion.cache.error_msg.cannotFindWrkSpacePath"));
@@ -540,7 +541,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
                 } catch (err) {
                     await vscode.window.showErrorMessage(l10n.value("jdk.extenstion.error_msg.cacheDeletionError"), reloadWindowActionLabel);
                 } finally {
-                    vscode.commands.executeCommand("workbench.action.reloadWindow");
+                    vscode.commands.executeCommand(builtInCommands.reloadWindow);
                 }
             }
         } else {
@@ -549,64 +550,64 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
     }));
     
 
-    context.subscriptions.push(vscode.commands.registerCommand(COMMAND_PREFIX + ".download.jdk", async () => { 
+    context.subscriptions.push(vscode.commands.registerCommand(extCommands.downloadJdk, async () => { 
         const jdkDownloaderView = new JdkDownloaderView(log);
         jdkDownloaderView.createView();
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.workspace.compile', () =>
-        wrapCommandWithProgress(COMMAND_PREFIX + '.build.workspace', l10n.value('jdk.extension.command.progress.compilingWorkSpace'), log, true)
+    context.subscriptions.push(commands.registerCommand(extCommands.compileWorkspace, () =>
+        wrapCommandWithProgress(nbCommands.buildWorkspace, l10n.value('jdk.extension.command.progress.compilingWorkSpace'), log, true)
     ));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.workspace.clean', () =>
-        wrapCommandWithProgress(COMMAND_PREFIX + '.clean.workspace',l10n.value('jdk.extension.command.progress.cleaningWorkSpace'), log, true)
+    context.subscriptions.push(commands.registerCommand(extCommands.cleanWorkspace, () =>
+        wrapCommandWithProgress(nbCommands.cleanWorkspace,l10n.value('jdk.extension.command.progress.cleaningWorkSpace'), log, true)
     ));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.project.compile', (args) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.compileProject, (args) => {
         wrapProjectActionWithProgress('build', undefined, l10n.value('jdk.extension.command.progress.compilingProject'), log, true, args);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.project.clean', (args) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.cleanProject, (args) => {
         wrapProjectActionWithProgress('clean', undefined, l10n.value('jdk.extension.command.progress.cleaningProject'), log, true, args);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.open.type', () => {
-        wrapCommandWithProgress(COMMAND_PREFIX + '.quick.open', l10n.value('jdk.extension.command.progress.quickOpen'), log, true).then(() => {
-            commands.executeCommand('workbench.action.focusActiveEditorGroup');
+    context.subscriptions.push(commands.registerCommand(extCommands.openType, () => {
+        wrapCommandWithProgress(nbCommands.quickOpen, l10n.value('jdk.extension.command.progress.quickOpen'), log, true).then(() => {
+            commands.executeCommand(builtInCommands.focusActiveEditorGroup);
         });
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.java.goto.super.implementation', async () => {
+    context.subscriptions.push(commands.registerCommand(extCommands.goToSuperImpl, async () => {
         if (window.activeTextEditor?.document.languageId !== LANGUAGE_ID) {
             return;
         }
         const uri = window.activeTextEditor.document.uri;
         const position = window.activeTextEditor.selection.active;
-        const locations: any[] = await vscode.commands.executeCommand(COMMAND_PREFIX + '.java.super.implementation', uri.toString(), position) || [];
-        return vscode.commands.executeCommand('editor.action.goToLocations', window.activeTextEditor.document.uri, position,
+        const locations: any[] = await vscode.commands.executeCommand(nbCommands.superImpl, uri.toString(), position) || [];
+        return vscode.commands.executeCommand(builtInCommands.goToEditorLocations, window.activeTextEditor.document.uri, position,
             locations.map(location => new vscode.Location(vscode.Uri.parse(location.uri), new vscode.Range(location.range.start.line, location.range.start.character, location.range.end.line, location.range.end.character))),
             'peek', l10n.value('jdk.extenstion.error_msg.noSuperImpl'));
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.rename.element.at', async (offset) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.renameElement, async (offset) => {
         const editor = window.activeTextEditor;
         if (editor) {
-            await commands.executeCommand('editor.action.rename', [
+            await commands.executeCommand(builtInCommands.renameSymbol, [
                 editor.document.uri,
                 editor.document.positionAt(offset),
             ]);
         }
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.surround.with', async (items) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.surroundWith, async (items) => {
         const selected: any = await window.showQuickPick(items, { placeHolder: l10n.value('jdk.extension.command.quickPick.placeholder.surroundWith') });
         if (selected) {
             if (selected.userData.edit) {
                 const edit = await (await client).protocol2CodeConverter.asWorkspaceEdit(selected.userData.edit as ls.WorkspaceEdit);
                 await workspace.applyEdit(edit);
-                await commands.executeCommand('workbench.action.focusActiveEditorGroup');
+                await commands.executeCommand(builtInCommands.focusActiveEditorGroup);
             }
             await commands.executeCommand(selected.userData.command.command, ...(selected.userData.command.arguments || []));
         }
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.generate.code', async (command, data) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.generateCode, async (command, data) => {
         const edit: any = await commands.executeCommand(command, data);
         if (edit) {
             const wsEdit = await (await client).protocol2CodeConverter.asWorkspaceEdit(edit as ls.WorkspaceEdit);
             await workspace.applyEdit(wsEdit);
-            await commands.executeCommand('workbench.action.focusActiveEditorGroup');
+            await commands.executeCommand(builtInCommands.focusActiveEditorGroup);
         }
     }));
 
@@ -632,7 +633,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
         let provider = new P();
         let d = vscode.debug.registerDebugConfigurationProvider(COMMAND_PREFIX, provider);
         // let vscode to select a debug config
-        return await vscode.commands.executeCommand('workbench.action.debug.start', { config: {
+        return await vscode.commands.executeCommand(extCommands.startDebug, { config: {
             type: COMMAND_PREFIX,
             mainClass: uri.toString()
         }, noDebug: true}).then((v) => {
@@ -686,57 +687,57 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
         }
     };
 
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.run.test', async (uri, methodName?, launchConfiguration?) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.runTest, async (uri, methodName?, launchConfiguration?) => {
         await runDebug(true, true, uri, methodName, launchConfiguration);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.debug.test', async (uri, methodName?, launchConfiguration?) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.debugTest, async (uri, methodName?, launchConfiguration?) => {
         await runDebug(false, true, uri, methodName, launchConfiguration);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.run.single', async (uri, methodName?, launchConfiguration?) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.runSingle, async (uri, methodName?, launchConfiguration?) => {
         await runDebug(true, false, uri, methodName, launchConfiguration);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.debug.single', async (uri, methodName?, launchConfiguration?) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.debugSingle, async (uri, methodName?, launchConfiguration?) => {
         await runDebug(false, false, uri, methodName, launchConfiguration);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.project.run', async (node, launchConfiguration?) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.projectRun, async (node, launchConfiguration?) => {
         return runDebug(true, false, contextUri(node)?.toString() || '',  undefined, launchConfiguration, true);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.project.debug', async (node, launchConfiguration?) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.projectDebug, async (node, launchConfiguration?) => {
         return runDebug(false, false, contextUri(node)?.toString() || '',  undefined, launchConfiguration, true);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.project.test', async (node, launchConfiguration?) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.projectTest, async (node, launchConfiguration?) => {
         return runDebug(true, true, contextUri(node)?.toString() || '',  undefined, launchConfiguration, true);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.package.test', async (uri, launchConfiguration?) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.packageTest, async (uri, launchConfiguration?) => {
         await runDebug(true, true, uri, undefined, launchConfiguration);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.open.stacktrace', async (uri, methodName, fileName, line) => {
-        const location: string | undefined = uri ? await commands.executeCommand(COMMAND_PREFIX + '.resolve.stacktrace.location', uri, methodName, fileName) : undefined;
+    context.subscriptions.push(commands.registerCommand(extCommands.openStackTrace, async (uri, methodName, fileName, line) => {
+        const location: string | undefined = uri ? await commands.executeCommand(nbCommands.resolveStackLocation, uri, methodName, fileName) : undefined;
         if (location) {
             const lNum = line - 1;
             window.showTextDocument(vscode.Uri.parse(location), { selection: new vscode.Range(new vscode.Position(lNum, 0), new vscode.Position(lNum, 0)) });
         } else {
             if (methodName) {
                 const fqn: string = methodName.substring(0, methodName.lastIndexOf('.'));
-                commands.executeCommand('workbench.action.quickOpen', '#' + fqn.substring(fqn.lastIndexOf('.') + 1));
+                commands.executeCommand(builtInCommands.quickAccess, '#' + fqn.substring(fqn.lastIndexOf('.') + 1));
             }
         }
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.workspace.symbols', async (query) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.workspaceSymbols, async (query) => {
         const c = await client;
         return (await c.sendRequest<SymbolInformation[]>("workspace/symbol", { "query": query })) ?? [];
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.java.complete.abstract.methods', async () => {
+    context.subscriptions.push(commands.registerCommand(extCommands.abstractMethodsComplete, async () => {
         const active = vscode.window.activeTextEditor;
         if (active) {
             const position = new vscode.Position(active.selection.start.line, active.selection.start.character);
-            await commands.executeCommand(COMMAND_PREFIX + '.java.implement.all.abstract.methods', active.document.uri.toString(), position);
+            await commands.executeCommand(nbCommands.implementAbstractMethods, active.document.uri.toString(), position);
         }
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.startup.condition', async () => {
+    context.subscriptions.push(commands.registerCommand(extCommands.startupCondition, async () => {
         return client;
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.addEventListener', (eventName, listener) => {
+    context.subscriptions.push(commands.registerCommand(extCommands.nbEventListener, (eventName, listener) => {
         let ls = listeners.get(eventName);
         if (!ls) {
             ls = [];
@@ -744,12 +745,12 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
         }
         ls.push(listener);
     }));
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.node.properties.edit',
+    context.subscriptions.push(commands.registerCommand(extCommands.editNodeProps,
         async (node) => await PropertiesView.createOrShow(context, node, (await client).findTreeViewService())));
 
     const archiveFileProvider = <vscode.TextDocumentContentProvider> {
         provideTextDocumentContent: async (uri: vscode.Uri, token: vscode.CancellationToken): Promise<string> => {
-            return await commands.executeCommand(COMMAND_PREFIX + '.get.archive.file.content', uri.toString());
+            return await commands.executeCommand(nbCommands.archiveFileContent, uri.toString());
         }
     };
     context.subscriptions.push(workspace.registerTextDocumentContentProvider('jar', archiveFileProvider));
@@ -802,7 +803,7 @@ function activateWithJDK(specifiedJDK: string | null, context: ExtensionContext,
     });
     const a : Promise<void> | null = maintenance;
 
-    commands.executeCommand('setContext', 'nbJdkReady', false);
+    commands.executeCommand(builtInCommands.setCustomContext, 'nbJdkReady', false);
     activationPending = true;
     // chain the restart after termination of the former process.
     if (a != null) {
@@ -1018,7 +1019,7 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
                     downloadAndSetupActionLabel
                 ).then(selection => {
                     if (selection === downloadAndSetupActionLabel) {
-                        commands.executeCommand(`${COMMAND_PREFIX}.download.jdk`);
+                        commands.executeCommand(extCommands.downloadJdk);
                     }
                 });
             }
@@ -1291,7 +1292,7 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
             });
             handleLog(log, 'Language Client: Ready');
             setClient[0](c);
-            commands.executeCommand('setContext', 'nbJdkReady', true);
+            commands.executeCommand(builtInCommands.setCustomContext, 'nbJdkReady', true);
         
             // create project explorer:
             //c.findTreeViewService().createView('foundProjects', 'Projects', { canSelectMany : false });
@@ -1328,7 +1329,7 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
                 revealActiveEditor(ed);
             }
         }));
-        ctx.subscriptions.push(vscode.commands.registerCommand(COMMAND_PREFIX + ".select.editor.projects", () => revealActiveEditor()));
+        ctx.subscriptions.push(vscode.commands.registerCommand(extCommands.selectEditorProjs, () => revealActiveEditor()));
 
         // attempt to reveal NOW:
         if (netbeansConfig.get("revealActiveInProjects")) {
@@ -1368,7 +1369,7 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
                         view.dispose();
                         break;
                     case 'command':
-                        vscode.commands.executeCommand(COMMAND_PREFIX + '.htmlui.process.command', message.data);
+                        vscode.commands.executeCommand(nbCommands.htmlProcessCmd, message.data);
                         break;
                 }
             });
@@ -1432,7 +1433,7 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
                     if (enable === reply) {
                         workspace.getConfiguration().update(COMMAND_PREFIX + '.advanced.disable.nbjavac', false);
                     } else if (settings === reply) {
-                        vscode.commands.executeCommand('workbench.action.openSettings', COMMAND_PREFIX + '.jdkhome');
+                        vscode.commands.executeCommand(builtInCommands.openSettings, COMMAND_PREFIX + '.jdkhome');
                     }
                 });
             } else {
@@ -1562,7 +1563,7 @@ class NetBeansConfigurationInitialProvider implements vscode.DebugConfigurationP
             u = vscode.window.activeTextEditor?.document?.uri
         }
         let result : vscode.DebugConfiguration[] = [];
-        const configNames : string[] | null | undefined = await vscode.commands.executeCommand(COMMAND_PREFIX + '.project.configurations', u?.toString());
+        const configNames : string[] | null | undefined = await vscode.commands.executeCommand(nbCommands.projectConfigurations, u?.toString());
         if (configNames) {
             let first : boolean = true;
             for (let cn of configNames) {
@@ -1607,7 +1608,7 @@ class NetBeansConfigurationDynamicProvider implements vscode.DebugConfigurationP
             return [];
         }
         let result : vscode.DebugConfiguration[] = [];
-        const attachConnectors : DebugConnector[] | null | undefined = await vscode.commands.executeCommand(COMMAND_PREFIX + '.java.attachDebugger.configurations');
+        const attachConnectors : DebugConnector[] | null | undefined = await vscode.commands.executeCommand(nbCommands.debuggerConfigurations);
         if (attachConnectors) {
             for (let ac of attachConnectors) {
                 const debugConfig : vscode.DebugConfiguration = {
@@ -1619,7 +1620,7 @@ class NetBeansConfigurationDynamicProvider implements vscode.DebugConfigurationP
                     let defaultValue: string = ac.defaultValues[i];
                     if (!defaultValue.startsWith("${command:")) {
                         // Create a command that asks for the argument value:
-                        let cmd: string = COMMAND_PREFIX + ".java.attachDebugger.connector." + ac.id + "." + ac.arguments[i];
+                        let cmd: string = `${extCommands.attachDebugger}.${ac.id}.${ac.arguments[i]}`;
                         debugConfig[ac.arguments[i]] = "${command:" + cmd + "}";
                         if (!commandValues.has(cmd)) {
                             commandValues.set(cmd, ac.defaultValues[i]);

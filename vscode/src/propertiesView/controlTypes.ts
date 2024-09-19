@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { EnumType, Typed } from "../utils/typesUtil";
+import { EnumType, Typed } from "../typesUtil";
 
 export type ID = number;
 
