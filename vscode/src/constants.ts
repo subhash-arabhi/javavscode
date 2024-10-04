@@ -18,7 +18,8 @@
 export namespace extConstants {
   export const API_VERSION : string = "1.0";
   export const SERVER_NAME : string = "Oracle Java SE Language Server";
-  export const NB_LANGUAGE_CLIENT_ID: string = "java";
+  export const NB_LANGUAGE_CLIENT_ID: string = 'Oracle Java SE';
+  export const NB_LANGUAGE_CLIENT_NAME: string = "java";
   export const LANGUAGE_ID: string = "java";
   export const ORACLE_VSCODE_EXTENSION_ID = 'oracle.oracle-java';
   export const COMMAND_PREFIX = 'jdk';
@@ -34,5 +35,4 @@ export const OPEN_JDK_VERSION_DOWNLOAD_LINKS: { [key: string]: string } = {
   "23": "https://download.java.net/java/GA/jdk23/3c5b90190c68498b986a97f276efd28a/37/GPL/openjdk-23"
 };
 
-export const ORACLE_VSCODE_EXTENSION_ID = 'oracle.oracle-java';
 export const NODE_WINDOWS_LABEL = "Windows_NT";

@@ -108,3 +108,7 @@ export const userdirHandler = async (): Promise<string> => {
         throw new Error(`Failed to create or access ${userdir}: ${(error as Error).message}`);
     }
 }
+
+export const isNbJavacDisabledHandler = (): boolean => {
+   return getConfigurationValue(configKeys.verbose, false);
+}

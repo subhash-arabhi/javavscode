@@ -17,7 +17,8 @@ const launchNbcode = (): void => {
     const ideLaunchOptions = prepareNbcodeLaunchOptions();
     const userdir = userConfigLaunchOptionsDefaults[configKeys.userdir].value;
     const specifiedJDK = userConfigLaunchOptionsDefaults[configKeys.jdkHome].value;
-    const nbcodePath = findNbcode();
+    const extensionPath = globalVars.extensionInfo.getExtensionStorageUri().fsPath;
+    const nbcodePath = findNbcode(extensionPath);
 
     const requiredJdk = specifiedJDK ? specifiedJDK : 'default system JDK';
     let launchMsg = l10n.value("jdk.extension.lspServer.statusBar.message.launching", {
@@ -153,7 +154,7 @@ const processOnCloseHandler = (nbProcessManager: NbProcessManager, code: number)
 const enableDisableNbjavacModule = () => {
     const userdirPath = userConfigLaunchOptionsDefaults[configKeys.userdir].value;
     const nbjavacValue = userConfigLaunchOptionsDefaults[configKeys.disableNbJavac].value;
-    const extensionPath = globalVars.extensionInfo.getExtensionStoragePath();
+    const extensionPath = globalVars.extensionInfo.getExtensionStorageUri().fsPath;
     enableDisableModules(extensionPath, userdirPath, ['org.netbeans.libs.nbjavacapi'], nbjavacValue);
 }
 

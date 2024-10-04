@@ -1,7 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { globalVars } from '../extension';
+import { globalVars, LOGGER } from '../extension';
+import { TextDocumentFilter } from 'vscode-languageclient';
+import { extensions } from 'vscode';
+import { extConstants } from '../constants';
 
 export const enableDisableModules = (
     extensionPath: string,
@@ -25,8 +28,7 @@ export const enableDisableModules = (
     }
 }
 
-export const findNbcode = (): string => {
-    const extensionPath = globalVars.extensionInfo.getExtensionStoragePath();
+export const findNbcode = (extensionPath: string): string => {
     let nbcode = os.platform() === 'win32' ?
         os.arch() === 'x64' ? 'nbcode64.exe' : 'nbcode.exe'
         : 'nbcode.sh';
@@ -43,3 +45,25 @@ export const findNbcode = (): string => {
     }
     return nbcodePath;
 }
+
+export function collectDocumentSelectors(): TextDocumentFilter[] {
+    const selectors = [];
+    for (const extension of extensions.all) {
+        const contributesSection = extension.packageJSON['contributes'];
+        if (contributesSection) {
+            const documentSelectors = contributesSection['netbeans.documentSelectors'];
+            if (Array.isArray(documentSelectors) && documentSelectors.length) {
+                selectors.push(...documentSelectors);
+            }
+        }
+    }
+    return selectors;
+}
+
+
+export const restartWithJDKLater = (time: number, notifyKill: boolean): void => {
+    LOGGER.log(`Restart of ${extConstants.SERVER_NAME} requested in ${time / 1000} s.`);
+    const nbProcessManager = globalVars.nbProcessManager;
+    
+    setTimeout(() =>  globalVars.clientPromise.restartExtension(nbProcessManager, notifyKill), time);
+};

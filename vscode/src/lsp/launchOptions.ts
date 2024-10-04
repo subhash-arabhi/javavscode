@@ -1,11 +1,11 @@
 import { configKeys } from "../configurations/configuration"
-import { getConfigurationValue, isDarkColorThemeHandler, jdkHomeValueHandler, lspServerVmOptionsHandler, projectSearchRootsValueHandler, userdirHandler } from "../configurations/handlers";
+import { getConfigurationValue, isDarkColorThemeHandler, isNbJavacDisabledHandler, jdkHomeValueHandler, lspServerVmOptionsHandler, projectSearchRootsValueHandler, userdirHandler } from "../configurations/handlers";
 import { l10n } from "../localiser";
 import { userDefinedLaunchOptionsType } from "./types"
 
 export const userConfigLaunchOptionsDefaults: userDefinedLaunchOptionsType = {
     [configKeys.verbose]: {
-        value: getConfigurationValue(configKeys.verbose, false),
+        value: isNbJavacDisabledHandler(),
         optionToPass: '-J-Dnetbeans.logger.console='
     },
     [configKeys.jdkHome]: {

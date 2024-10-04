@@ -17,20 +17,20 @@ export const configKeys = {
 };
 
 export const userConfigsListened = [
-    configKeys.jdkHome,
-    configKeys.userdir,
-    configKeys.lspVmOptions,
-    configKeys.disableNbJavac,
-    configKeys.disableProjSearchLimit,
+    appendPrefixToCommand(configKeys.jdkHome),
+    appendPrefixToCommand(configKeys.userdir),
+    appendPrefixToCommand(configKeys.lspVmOptions),
+    appendPrefixToCommand(configKeys.disableNbJavac),
+    appendPrefixToCommand(configKeys.disableProjSearchLimit),
     configKeys.vscodeTheme,
 ];
 
 
 export const userConfigsListenedByServer = [
-    appendPrefixToCommand(configKeys.projectJdkHome),
-    appendPrefixToCommand(configKeys.formatPrefs),
     appendPrefixToCommand(configKeys.hintPrefs),
+    appendPrefixToCommand(configKeys.formatPrefs),
     appendPrefixToCommand(configKeys.importPrefs),
+    appendPrefixToCommand(configKeys.projectJdkHome),
     appendPrefixToCommand(configKeys.runConfigVmOptions),
     appendPrefixToCommand(configKeys.runConfigCwd)
 ];
