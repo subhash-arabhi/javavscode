@@ -67,8 +67,13 @@ import { initializeRunConfiguration, runConfigurationProvider, runConfigurationN
 import { InputStep, MultiStepInput } from './utils';
 import { PropertiesView } from './propertiesView/propertiesView';
 import { l10n } from './localiser';
-import { ORACLE_VSCODE_EXTENSION_ID,NODE_WINDOWS_LABEL } from './constants';
+import { ORACLE_VSCODE_EXTENSION_ID,NODE_WINDOWS_LABEL, extConstants } from './constants';
 import { JdkDownloaderView } from './jdkDownloader/view';
+import { ExtensionInfo } from './extensionInfo';
+import { ClientPromise } from './lsp/clientPromise';
+import { ExtensionLogger } from './logger';
+import { NbProcessManager } from './lsp/nbProcessManager';
+import { initializeServer } from './lsp/initializer';
 
 const API_VERSION : string = "1.0";
 const SERVER_NAME : string = "Oracle Java SE Language Server";
@@ -80,10 +85,15 @@ const listeners = new Map<string, string[]>();
 let client: Promise<NbLanguageClient>;
 let testAdapter: NbTestAdapter | undefined;
 let nbProcess : ChildProcess | null = null;
-let debugPort: number = -1;
-let debugHash: string | undefined;
-let consoleLog: boolean = !!process.env['ENABLE_CONSOLE_LOG'];
-let deactivated:boolean = true;
+export let LOGGER: ExtensionLogger;
+export namespace globalVars {
+    export let extensionInfo: ExtensionInfo;
+    export let clientPromise: ClientPromise;
+    export let debugPort: number = -1;
+    export let debugHash: string | undefined;
+    export let deactivated: boolean = true;
+    export let nbProcessManager: NbProcessManager | null;
+}
 export class NbLanguageClient extends LanguageClient {
     private _treeViewService: TreeViewService;
 
@@ -318,51 +328,37 @@ function wrapCommandWithProgress(lsCommand : string, title : string, log? : vsco
     });
 }
 
-/**
- * Just a simple promise subclass, so I can test for the 'initial promise' value:
- * unlike all other promises, that must be fullfilled in order to e.g. properly stop the server or otherwise communicate with it,
- * the initial one needs to be largely ignored in the launching/mgmt code, BUT should be available to normal commands / features.
- */
-class InitialPromise extends Promise<NbLanguageClient> {
-    constructor(f : (resolve: (value: NbLanguageClient | PromiseLike<NbLanguageClient>) => void, reject: (reason?: any) => void) => void) {
-        super(f);
-    }
-}
-
 export function activate(context: ExtensionContext): VSNetBeansAPI {
+    globalVars.deactivated = false;
+    globalVars.clientPromise = new ClientPromise();
+    globalVars.extensionInfo = new ExtensionInfo(context);
+    LOGGER = new ExtensionLogger(extConstants.SERVER_NAME);
 
-    deactivated=false;
-    let log = vscode.window.createOutputChannel(SERVER_NAME);
-    var clientResolve : (x : NbLanguageClient) => void;
-    var clientReject : (err : any) => void;
-
-    // establish a waitable Promise, export the callbacks so they can be called after activation.
-    client = new InitialPromise((resolve, reject) => {
-        clientResolve = resolve;
-        clientReject = reject;
-    });
+    globalVars.clientPromise.clientPromiseInitialization();
+    let log = vscode.window.createOutputChannel(`${SERVER_NAME}_1`);
 
     // find acceptable JDK and launch the Java part
-    findJDK((specifiedJDK) => {
-        let currentClusters = findClusters(context.extensionPath).sort();
-        const dsSorter = (a: TextDocumentFilter, b: TextDocumentFilter) => {
-            return (a.language || '').localeCompare(b.language || '')
-                || (a.pattern || '').localeCompare(b.pattern || '')
-                || (a.scheme || '').localeCompare(b.scheme || '');
-        };
-        let currentDocumentSelectors = collectDocumentSelectors().sort(dsSorter);
-        context.subscriptions.push(vscode.extensions.onDidChange(() => {
-            const newClusters = findClusters(context.extensionPath).sort();
-            const newDocumentSelectors = collectDocumentSelectors().sort(dsSorter);
-            if (newClusters.length !== currentClusters.length || newDocumentSelectors.length !== currentDocumentSelectors.length
-                || newClusters.find((value, index) => value !== currentClusters[index]) || newDocumentSelectors.find((value, index) => value !== currentDocumentSelectors[index])) {
-                currentClusters = newClusters;
-                currentDocumentSelectors = newDocumentSelectors;
-                activateWithJDK(specifiedJDK, context, log, true, clientResolve, clientReject);
-            }
-        }));
-        activateWithJDK(specifiedJDK, context, log, true, clientResolve, clientReject);
-    });
+    // findJDK((specifiedJDK) => {
+    //     let currentClusters = findClusters(context.extensionPath).sort();
+    //     const dsSorter = (a: TextDocumentFilter, b: TextDocumentFilter) => {
+    //         return (a.language || '').localeCompare(b.language || '')
+    //             || (a.pattern || '').localeCompare(b.pattern || '')
+    //             || (a.scheme || '').localeCompare(b.scheme || '');
+    //     };
+    //     let currentDocumentSelectors = collectDocumentSelectors().sort(dsSorter);
+    //     context.subscriptions.push(vscode.extensions.onDidChange(() => {
+    //         const newClusters = findClusters(context.extensionPath).sort();
+    //         const newDocumentSelectors = collectDocumentSelectors().sort(dsSorter);
+    //         if (newClusters.length !== currentClusters.length || newDocumentSelectors.length !== currentDocumentSelectors.length
+    //             || newClusters.find((value, index) => value !== currentClusters[index]) || newDocumentSelectors.find((value, index) => value !== currentDocumentSelectors[index])) {
+    //             currentClusters = newClusters;
+    //             currentDocumentSelectors = newDocumentSelectors;
+    //             activateWithJDK(specifiedJDK, context, log, true, clientResolve, clientReject);
+    //         }
+    //     }));
+    //     activateWithJDK(specifiedJDK, context, log, true, clientResolve, clientReject);
+    // });
+    
 
     //register debugger:
     let debugTrackerFactory =new NetBeansDebugAdapterTrackerFactory();
@@ -895,196 +891,7 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
             activateWithJDK(specifiedJDK, context, log, n);
         }, time);
     };
-
-    const netbeansConfig = workspace.getConfiguration(COMMAND_PREFIX);
-    const beVerbose : boolean = netbeansConfig.get('verbose', false);
-    let userdir = process.env['nbcode_userdir'] || netbeansConfig.get('userdir', 'local');
-    switch (userdir) {
-        case 'local':
-            if (context.storagePath) {
-                userdir = context.storagePath;
-                break;
-            }
-            // fallthru
-        case 'global':
-            userdir = context.globalStoragePath;
-            break;
-        default:
-            // assume storage is path on disk
-    }
-
-    let disableModules : string[] = [];
-    let enableModules : string[] = [];
-    if (isNbJavacDisabled()) {
-        disableModules.push('org.netbeans.libs.nbjavacapi');
-    } else {
-        enableModules.push('org.netbeans.libs.nbjavacapi');
-    }
-
-    let projectSearchRoots:string = '';
-    const isProjectFolderSearchLimited : boolean = !netbeansConfig.get('advanced.disable.projectSearchLimit', false);
-    if (isProjectFolderSearchLimited) {
-        try {
-            projectSearchRoots = os.homedir() as string;
-        } catch (err:any) {
-            handleLog(log, `Failed to obtain the user home directory due to: ${err}`);
-        }
-        if (!projectSearchRoots) {
-            projectSearchRoots = os.type() === NODE_WINDOWS_LABEL ? '%USERPROFILE%' : '$HOME';   // The launcher script may perform the env variable substitution
-            handleLog(log, `Using userHomeDir = "${projectSearchRoots}" as the launcher script may perform env var substitution to get its value.`);
-        }
-        const workspaces = workspace.workspaceFolders;
-        if (workspaces) {
-            workspaces.forEach(workspace => {
-                if (workspace.uri) {
-                    try {
-                        projectSearchRoots = projectSearchRoots + path.delimiter + path.normalize(workspace.uri.fsPath);
-                    } catch (err:any) {
-                        handleLog(log, `Failed to get the workspace path: ${err}`);
-                    }
-                }
-            });
-        }
-    }
-
-    let info = {
-        clusters : findClusters(context.extensionPath),
-        extensionPath: context.extensionPath,
-        storagePath : userdir,
-        jdkHome : specifiedJDK,
-        projectSearchRoots: projectSearchRoots,
-        verbose: beVerbose,
-        disableModules : disableModules,
-        enableModules : enableModules,
-    };
-
-    const requiredJdk = specifiedJDK ? specifiedJDK : 'default system JDK';
-    let launchMsg = l10n.value("jdk.extension.lspServer.statusBar.message.launching",{
-        SERVER_NAME:SERVER_NAME,
-        requiredJdk:requiredJdk,
-        userdir:userdir
-        });
-    handleLog(log, launchMsg);
-    vscode.window.setStatusBarMessage(launchMsg, 2000);
-
-    let ideRunning = new Promise((resolve, reject) => {
-        let stdOut : string | null = '';
-        let stdErr : string | null = '';
-        function logAndWaitForEnabled(text: string, isOut: boolean) {
-            if (p == nbProcess) {
-                activationPending = false;
-            }
-            handleLogNoNL(log, text);
-            if (stdOut == null) {
-                return;
-            }
-            if (isOut) {
-                stdOut += text;
-            } else {
-                stdErr += text;
-            }
-            if (stdOut.match(/org.netbeans.modules.java.lsp.server/)) {
-                resolve(text);
-                stdOut = null;
-            }
-        }
-        let extras : string[] = ["--modules", "--list", "-J-XX:PerfMaxStringConstLength=10240","--locale",l10n.nbLocaleCode()];
-        if (isDarkColorTheme()) {
-            extras.push('--laf', 'com.formdev.flatlaf.FlatDarkLaf');
-        }
-        let serverVmOptions: string[] = workspace.getConfiguration(COMMAND_PREFIX).get("serverVmOptions",[]);
-        extras.push(...serverVmOptions.map(el => `-J${el}`));
-        let p = launcher.launch(info, ...extras);
-        handleLog(log, "LSP server launching: " + p.pid);
-        handleLog(log, "LSP server user directory: " + userdir);
-        p.stdout.on('data', function(d: any) {
-            logAndWaitForEnabled(d.toString(), true);
-        });
-        p.stderr.on('data', function(d: any) {
-            logAndWaitForEnabled(d.toString(), false);
-        });
-        nbProcess = p;
-        p.on('close', function(code: number) {
-            if (p == nbProcess) {
-                nbProcess = null;
-            }
-            if (p == nbProcess && code != 0 && code) {
-                vscode.window.showWarningMessage(l10n.value("jdk.extension.lspServer.warning_message.serverExited",{SERVER_NAME:SERVER_NAME,code:code}));
-            }
-            if (stdErr?.match(/Cannot find java/) || (os.type() === NODE_WINDOWS_LABEL && !deactivated) ) {
-                const downloadAndSetupActionLabel = l10n.value("jdk.extension.lspServer.label.downloadAndSetup")
-                vscode.window.showInformationMessage(
-                    l10n.value("jdk.extension.lspServer.message.noJdkFound"),
-                    downloadAndSetupActionLabel
-                ).then(selection => {
-                    if (selection === downloadAndSetupActionLabel) {
-                        commands.executeCommand(`${COMMAND_PREFIX}.download.jdk`);
-                    }
-                });
-            }
-            if (stdOut != null) {
-                let match = stdOut.match(/org.netbeans.modules.java.lsp.server[^\n]*/)
-                if (match?.length == 1) {
-                    handleLog(log, match[0]);
-                } else {
-                    handleLog(log, "Cannot find org.netbeans.modules.java.lsp.server in the log!");
-                }
-                handleLog(log, `Please refer to troubleshooting section for more info: https://github.com/oracle/javavscode/blob/main/README.md#troubleshooting`);
-                log.show(false);
-                killNbProcess(false, log, p);
-                reject(l10n.value("jdk.extension.error_msg.notEnabled",{SERVER_NAME}));
-            } else {
-                handleLog(log, "LSP server " + p.pid + " terminated with " + code);
-                handleLog(log, "Exit code " + code);
-            }
-        });
-    });
-
-    ideRunning.then(() => {
-        const connection = () => new Promise<StreamInfo>((resolve, reject) => {
-            const srv = launcher.launch(info,
-                `--start-java-language-server=listen-hash:0`,
-                `--start-java-debug-adapter-server=listen-hash:0`
-            );
-            if (!srv) {
-                reject();
-            } else {
-                if (!srv.stdout) {
-                    reject(`No stdout to parse!`);
-                    srv.disconnect();
-                    return;
-                }
-                debugPort = -1;
-                var lspServerStarted = false;
-                srv.stdout.on("data", (chunk) => {
-                    if (debugPort < 0) {
-                        const info = chunk.toString().match(/Debug Server Adapter listening at port (\d*) with hash (.*)\n/);
-                        if (info) {
-                            debugPort = info[1];
-                            debugHash = info[2];
-                        }
-                    }
-                    if (!lspServerStarted) {
-                        const info = chunk.toString().match(/Java Language Server listening at port (\d*) with hash (.*)\n/);
-                        if (info) {
-                            const port : number = info[1];
-                            const server = net.connect(port, "127.0.0.1", () => {
-                                server.write(info[2]);
-                                resolve({
-                                    reader: server,
-                                    writer: server
-                                });
-                            });
-                            lspServerStarted = true;
-                        }
-                    }
-                });
-                srv.once("error", (err) => {
-                    reject(err);
-                });
-            }
-        });
-        const conf = workspace.getConfiguration();
+        const connection = initializeServer();
         let documentSelectors : DocumentSelector = [
                 { language: LANGUAGE_ID },
                 { language: 'yaml', pattern: '**/{application,bootstrap}*.yml' },

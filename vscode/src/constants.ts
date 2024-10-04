@@ -15,6 +15,15 @@
 */
 
 
+export namespace extConstants {
+  export const API_VERSION : string = "1.0";
+  export const SERVER_NAME : string = "Oracle Java SE Language Server";
+  export const NB_LANGUAGE_CLIENT_ID: string = "java";
+  export const LANGUAGE_ID: string = "java";
+  export const ORACLE_VSCODE_EXTENSION_ID = 'oracle.oracle-java';
+  export const COMMAND_PREFIX = 'jdk';
+}
+
 export const JDK_RELEASES_TRACK_URL = `https://www.java.com/releases/releases.json`;
 
 export const ORACLE_JDK_BASE_DOWNLOAD_URL = `https://download.oracle.com/java`;
