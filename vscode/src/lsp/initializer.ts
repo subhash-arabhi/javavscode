@@ -96,9 +96,9 @@ const connectToServer = (nbProcess: ChildProcess): net.Socket | void => {
                 const port: number = info[1];
                 const server = net.connect(port, "127.0.0.1", () => {
                     server.write(info[2]);
-                    return server;
                 });
                 lspServerStarted = true;
+                return server;
             }
         }
     });

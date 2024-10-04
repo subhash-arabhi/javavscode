@@ -30,6 +30,7 @@ import * as path from 'path';
 import { spawn, ChildProcessByStdio } from 'child_process';
 import { Readable } from 'stream';
 import { EXAMPLE_POM, MAIN_JAVA, MAIN_TEST_JAVA, SAMPLE_CODE_FORMAT_DOCUMENT, SAMPLE_CODE_REFACTOR, SAMPLE_CODE_SORT_IMPORTS, SAMPLE_CODE_UNUSED_IMPORTS } from './constants';
+import { extConstants } from '../../constants';
 
 /**
  * Folder path currently opened in VSCode workspace 
@@ -129,9 +130,9 @@ async function waitProjectRecognized(someJavaFile: string): Promise<void> {
     return waitCommandsReady().then(() => {
         const u: vscode.Uri = vscode.Uri.file(someJavaFile);
         // clear out possible bad or negative caches.
-        return vscode.commands.executeCommand(myExtension.COMMAND_PREFIX + ".clear.project.caches").then(
+        return vscode.commands.executeCommand(extConstants.COMMAND_PREFIX + ".clear.project.caches").then(
             // this should assure opening the root with the created project.
-            () => vscode.commands.executeCommand(myExtension.COMMAND_PREFIX + ".java.get.project.packages", u.toString())
+            () => vscode.commands.executeCommand(extConstants.COMMAND_PREFIX + ".java.get.project.packages", u.toString())
         );
     });
 }
