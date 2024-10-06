@@ -225,6 +225,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
     globalVars.clientPromise.clientPromiseInitialization();
 
     context.subscriptions.push(workspace.onDidChangeConfiguration(configChangeListener));
+    doActivateWithJDK();
     // find acceptable JDK and launch the Java part
     // findJDK((specifiedJDK) => {
     //     let currentClusters = findClusters(context.extensionPath).sort();

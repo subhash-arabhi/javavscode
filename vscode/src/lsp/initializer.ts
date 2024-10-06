@@ -1,5 +1,5 @@
 import { StreamInfo } from "vscode-languageclient/node";
-import { prepareNbcodeLaunchOptions, userConfigLaunchOptionsDefaults } from "./launchOptions";
+import { getUserConfigLaunchOptionsDefaults, prepareNbcodeLaunchOptions } from "./launchOptions";
 import { globalVars, LOGGER } from "../extension";
 import { configKeys } from "../configurations/configuration";
 import { NbProcessManager } from "./nbProcessManager";
@@ -12,11 +12,12 @@ import { ChildProcess } from "child_process";
 import { jdkDownloaderPrompt } from "../jdkDownloader/prompt";
 import * as os from 'os';
 import { LogLevel } from "../logger";
+import { isNbJavacDisabledHandler } from "../configurations/handlers";
 
 const launchNbcode = (): void => {
     const ideLaunchOptions = prepareNbcodeLaunchOptions();
-    const userdir = userConfigLaunchOptionsDefaults[configKeys.userdir].value;
-    const specifiedJDK = userConfigLaunchOptionsDefaults[configKeys.jdkHome].value;
+    const userdir = getUserConfigLaunchOptionsDefaults()[configKeys.userdir].value;
+    const specifiedJDK = getUserConfigLaunchOptionsDefaults()[configKeys.jdkHome].value;
     const extensionPath = globalVars.extensionInfo.getExtensionStorageUri().fsPath;
     const nbcodePath = findNbcode(extensionPath);
 
@@ -57,7 +58,7 @@ const establishConnection = () => new Promise<StreamInfo>((resolve, reject) => {
     }
 
     LOGGER.log(`LSP server launching: ${nbProcessManager.getProcessId()}`);
-    LOGGER.log(`LSP server user directory: ${userConfigLaunchOptionsDefaults[configKeys.userdir].value}`);
+    LOGGER.log(`LSP server user directory: ${getUserConfigLaunchOptionsDefaults()[configKeys.userdir].value}`);
     
     nbProcess.on('data', function (d: any) {
         const status = processOnDataHandler(nbProcessManager, d.toString(), true);
@@ -152,8 +153,8 @@ const processOnCloseHandler = (nbProcessManager: NbProcessManager, code: number)
 }
 
 const enableDisableNbjavacModule = () => {
-    const userdirPath = userConfigLaunchOptionsDefaults[configKeys.userdir].value;
-    const nbjavacValue = userConfigLaunchOptionsDefaults[configKeys.disableNbJavac].value;
+    const userdirPath = getUserConfigLaunchOptionsDefaults()[configKeys.userdir].value
+    const nbjavacValue = isNbJavacDisabledHandler();
     const extensionPath = globalVars.extensionInfo.getExtensionStorageUri().fsPath;
     enableDisableModules(extensionPath, userdirPath, ['org.netbeans.libs.nbjavacapi'], nbjavacValue);
 }

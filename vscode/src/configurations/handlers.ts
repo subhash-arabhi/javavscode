@@ -82,7 +82,7 @@ export const isDarkColorThemeHandler = (): boolean => {
     return false;
 }
 
-export const userdirHandler = async (): Promise<string> => {
+export const userdirHandler = (): string => {
     const userdirScope = process.env['nbcode_userdir'] || getConfigurationValue(configKeys.userdir, "local");
     const userdirParentDir = userdirScope === "local"
         ? globalVars.extensionInfo.getWorkspaceStorage()?.fsPath

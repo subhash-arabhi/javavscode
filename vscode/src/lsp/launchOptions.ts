@@ -1,32 +1,34 @@
 import { configKeys } from "../configurations/configuration"
-import { getConfigurationValue, isDarkColorThemeHandler, isNbJavacDisabledHandler, jdkHomeValueHandler, lspServerVmOptionsHandler, projectSearchRootsValueHandler, userdirHandler } from "../configurations/handlers";
+import { isDarkColorThemeHandler, isNbJavacDisabledHandler, jdkHomeValueHandler, lspServerVmOptionsHandler, projectSearchRootsValueHandler, userdirHandler } from "../configurations/handlers";
 import { l10n } from "../localiser";
 import { userDefinedLaunchOptionsType } from "./types"
 
-export const userConfigLaunchOptionsDefaults: userDefinedLaunchOptionsType = {
-    [configKeys.verbose]: {
-        value: isNbJavacDisabledHandler(),
-        optionToPass: '-J-Dnetbeans.logger.console='
-    },
-    [configKeys.jdkHome]: {
-        value: jdkHomeValueHandler(),
-        optionToPass: ['--jdkhome']
-    },
-    [configKeys.disableProjSearchLimit]: {
-        value: projectSearchRootsValueHandler(),
-        optionToPass: '-J-Dproject.limitScanRoot='
-    },
-    [configKeys.vscodeTheme]: {
-        value: isDarkColorThemeHandler() ? 'com.formdev.flatlaf.FlatDarkLaf' : null,
-        optionToPass: ['--laf']
-    },
-    [configKeys.userdir]: {
-        value: userdirHandler(),
-        optionToPass: ['--userdir']
-    },
-    [configKeys.lspVmOptions]: {
-        value: lspServerVmOptionsHandler()
-    }
+export const getUserConfigLaunchOptionsDefaults = (): userDefinedLaunchOptionsType => {
+    return {
+        [configKeys.verbose]: {
+            value: isNbJavacDisabledHandler(),
+            optionToPass: '-J-Dnetbeans.logger.console='
+        },
+        [configKeys.jdkHome]: {
+            value: jdkHomeValueHandler(),
+            optionToPass: ['--jdkhome']
+        },
+        [configKeys.disableProjSearchLimit]: {
+            value: projectSearchRootsValueHandler(),
+            optionToPass: '-J-Dproject.limitScanRoot='
+        },
+        [configKeys.vscodeTheme]: {
+            value: isDarkColorThemeHandler() ? 'com.formdev.flatlaf.FlatDarkLaf' : null,
+            optionToPass: ['--laf']
+        },
+        [configKeys.userdir]: {
+            value: userdirHandler(),
+            optionToPass: ['--userdir']
+        },
+        [configKeys.lspVmOptions]: {
+            value: lspServerVmOptionsHandler()
+        }
+    };
 };
 
 const extraLaunchOptions = ["--modules",
@@ -38,7 +40,7 @@ const extraLaunchOptions = ["--modules",
 
 const prepareUserConfigLaunchOptions = (): string[] => {
     const launchOptions: string[] = [];
-
+    const userConfigLaunchOptionsDefaults = getUserConfigLaunchOptionsDefaults();
     Object.values(userConfigLaunchOptionsDefaults).forEach(userConfig => {
         const { value, optionToPass } = userConfig;
         if (value) {
@@ -48,7 +50,7 @@ const prepareUserConfigLaunchOptions = (): string[] => {
             else if (typeof (optionToPass) === "string") {
                 launchOptions.push(`${optionToPass}${value}`);
             } else if (Array.isArray(optionToPass)) {
-                const arg: string[] = [optionToPass, value];
+                const arg: string[] = [...optionToPass, value];
                 launchOptions.push(...arg);
             }
         }

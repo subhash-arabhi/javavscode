@@ -1,5 +1,4 @@
 import { ConfigurationChangeEvent, workspace } from "vscode";
-import { extConstants } from "../constants";
 import { userConfigsListened } from "./configuration";
 import { globalVars } from "../extension";
 
