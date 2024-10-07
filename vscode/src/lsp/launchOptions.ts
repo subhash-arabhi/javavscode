@@ -36,9 +36,7 @@ const extraLaunchOptions = ["--modules",
     "-J-XX:PerfMaxStringConstLength=10240",
     "--locale", l10n.nbLocaleCode(),
     "--start-java-language-server=listen-hash:0",
-    "--start-java-debug-adapter-server=listen-hash:0",
-    // "-J-Xdebug",
-    // "-J-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000"
+    "--start-java-debug-adapter-server=listen-hash:0"
     ];
 
 const prepareUserConfigLaunchOptions = (): string[] => {

@@ -72,7 +72,7 @@ export class NbProcessManager {
     }
     
     appendStdOut = (text: string) => {
-        if(this.stdOutText) {
+        if(this.stdOutText != null) {
             this.stdOutText += text;
         }
     }

@@ -652,7 +652,6 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
 
 function doActivateWithJDK(): void {
         const connection: () => Promise<StreamInfo> = initializeServer();
-        // const connectionPromiseMethod = () => connection;
         const c = NbLanguageClient.build(connection, LOGGER);
         
         LOGGER.log('Language Client: Starting');

@@ -35,7 +35,6 @@ const launchNbcode = (): void => {
 }
 
 const establishConnection = () => new Promise<StreamInfo>((resolve, reject) => {
-    launchNbcode();
     const nbProcess = globalVars.nbProcessManager?.getProcess();
     const nbProcessManager = globalVars.nbProcessManager;
 
@@ -48,7 +47,7 @@ const establishConnection = () => new Promise<StreamInfo>((resolve, reject) => {
     LOGGER.log(`LSP server user directory: ${getUserConfigLaunchOptionsDefaults()[configKeys.userdir].value}`);
 
     let status = false;
-    nbProcess.on('data', (d: any) => {
+    nbProcess.stdout?.on('data', (d: any) => {
         status = processOnDataHandler(nbProcessManager, d.toString(), true);
     });
     nbProcess.stderr?.on('data', (d: any) => {
@@ -56,19 +55,16 @@ const establishConnection = () => new Promise<StreamInfo>((resolve, reject) => {
     });
     nbProcess.on('close', (code: number) => {
         const status = processOnCloseHandler(nbProcessManager, code)
-        if(status != null){
+        if (status != null) {
             reject(status);
         }
     });
 
     try {
-        const server = connectToServer(nbProcess);
-        if (server) {
-            resolve({
-                reader: server,
-                writer: server
-            });
-        }
+        connectToServer(nbProcess).then(server => resolve({
+            reader: server,
+            writer: server
+        })).catch(err => { throw err });
     } catch (err) {
         reject(err);
         globalVars.nbProcessManager?.disconnect();
@@ -76,34 +72,37 @@ const establishConnection = () => new Promise<StreamInfo>((resolve, reject) => {
     }
 });
 
-const connectToServer = (nbProcess: ChildProcess): net.Socket | void => {
-    if (!nbProcess.stdout) {
-        throw new Error('No stdout to parse!');
-    }
-    globalVars.debugPort = -1;
-    let lspServerStarted = false;
-    nbProcess.stdout.on("data", (chunk) => {
-        if (globalVars.debugPort < 0) {
-            const info = chunk.toString().match(/Debug Server Adapter listening at port (\d*) with hash (.*)\n/);
-            if (info) {
-                globalVars.debugPort = info[1];
-                globalVars.debugHash = info[2];
-            }
+const connectToServer = (nbProcess: ChildProcess): Promise<net.Socket> => {
+    return new Promise<net.Socket>((resolve, reject) => {
+        if (!nbProcess.stdout) {
+            reject('No stdout to parse!');
+            return;
         }
-        if (!lspServerStarted) {
-            const info = chunk.toString().match(/Java Language Server listening at port (\d*) with hash (.*)\n/);
-            if (info) {
-                const port: number = info[1];
-                const server = net.connect(port, "127.0.0.1", () => {
-                    server.write(info[2]);
-                });
-                lspServerStarted = true;
-                return server;
+        globalVars.debugPort = -1;
+        let lspServerStarted = false;
+        nbProcess.stdout.on("data", (chunk) => {
+            if (globalVars.debugPort < 0) {
+                const info = chunk.toString().match(/Debug Server Adapter listening at port (\d*) with hash (.*)\n/);
+                if (info) {
+                    globalVars.debugPort = info[1];
+                    globalVars.debugHash = info[2];
+                }
             }
-        }
-    });
-    nbProcess.once("error", (err) => {
-        throw err;
+            if (!lspServerStarted) {
+                const info = chunk.toString().match(/Java Language Server listening at port (\d*) with hash (.*)\n/);
+                if (info) {
+                    const port: number = info[1];
+                    const server = net.connect(port, "127.0.0.1", () => {
+                        server.write(info[2]);
+                        resolve(server);
+                    });
+                    lspServerStarted = true;
+                }
+            }
+        });
+        nbProcess.once("error", (err) => {
+            reject(err);
+        });
     });
 }
 
@@ -121,11 +120,11 @@ const processOnDataHandler = (nbProcessManager: NbProcessManager, text: string, 
 }
 
 
-const processOnCloseHandler = (nbProcessManager: NbProcessManager, code: number): string | null=> {
+const processOnCloseHandler = (nbProcessManager: NbProcessManager, code: number): string | null => {
     const globalnbProcessManager = globalVars.nbProcessManager;
     if (globalnbProcessManager == nbProcessManager) {
         globalVars.nbProcessManager = null;
-        if(code!=0){
+        if (code != 0) {
             window.showWarningMessage(l10n.value("jdk.extension.lspServer.warning_message.serverExited", { SERVER_NAME: extConstants.SERVER_NAME, code: code }));
         }
     }
@@ -141,7 +140,7 @@ const processOnCloseHandler = (nbProcessManager: NbProcessManager, code: number)
         }
         LOGGER.log(`Please refer to troubleshooting section for more info: https://github.com/oracle/javavscode/blob/main/README.md#troubleshooting`);
         LOGGER.showOutputChannelUI(false);
-        
+
         nbProcessManager.killProcess(false);
         return l10n.value("jdk.extension.error_msg.notEnabled", { SERVER_NAME: extConstants.SERVER_NAME });
     } else {
@@ -160,5 +159,6 @@ const enableDisableNbjavacModule = () => {
 
 export const initializeServer = () => {
     enableDisableNbjavacModule();
+    launchNbcode();
     return establishConnection;
 }
