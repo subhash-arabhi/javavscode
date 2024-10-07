@@ -307,28 +307,9 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
     context.subscriptions.push(commands.registerCommand(extConstants.COMMAND_PREFIX + '.package.test', async (uri, launchConfiguration?) => {
         await runDebug(true, true, uri, undefined, launchConfiguration);
     }));
-    context.subscriptions.push(commands.registerCommand(extConstants.COMMAND_PREFIX + '.open.stacktrace', async (uri, methodName, fileName, line) => {
-        const location: string | undefined = uri ? await commands.executeCommand(extConstants.COMMAND_PREFIX + '.resolve.stacktrace.location', uri, methodName, fileName) : undefined;
-        if (location) {
-            const lNum = line - 1;
-            window.showTextDocument(vscode.Uri.parse(location), { selection: new vscode.Range(new vscode.Position(lNum, 0), new vscode.Position(lNum, 0)) });
-        } else {
-            if (methodName) {
-                const fqn: string = methodName.substring(0, methodName.lastIndexOf('.'));
-                commands.executeCommand('workbench.action.quickOpen', '#' + fqn.substring(fqn.lastIndexOf('.') + 1));
-            }
-        }
-    }));
     context.subscriptions.push(commands.registerCommand(extConstants.COMMAND_PREFIX + '.workspace.symbols', async (query) => {
         const c = await globalVars.clientPromise.client;
         return (await c.sendRequest<SymbolInformation[]>("workspace/symbol", { "query": query })) ?? [];
-    }));
-    context.subscriptions.push(commands.registerCommand(extConstants.COMMAND_PREFIX + '.java.complete.abstract.methods', async () => {
-        const active = vscode.window.activeTextEditor;
-        if (active) {
-            const position = new vscode.Position(active.selection.start.line, active.selection.start.character);
-            await commands.executeCommand(extConstants.COMMAND_PREFIX + '.java.implement.all.abstract.methods', active.document.uri.toString(), position);
-        }
     }));
     context.subscriptions.push(commands.registerCommand(extConstants.COMMAND_PREFIX + '.startup.condition', async () => {
         return globalVars.clientPromise.client;
