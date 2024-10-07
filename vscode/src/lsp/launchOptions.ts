@@ -1,4 +1,4 @@
-import { configKeys } from "../configurations/configuration"
+import { builtInConfigKeys, configKeys } from "../configurations/configuration"
 import { isDarkColorThemeHandler, isNbJavacDisabledHandler, jdkHomeValueHandler, lspServerVmOptionsHandler, projectSearchRootsValueHandler, userdirHandler } from "../configurations/handlers";
 import { l10n } from "../localiser";
 import { userDefinedLaunchOptionsType } from "./types"
@@ -21,7 +21,7 @@ export const getUserConfigLaunchOptionsDefaults = (): userDefinedLaunchOptionsTy
             value: isNbJavacDisabledHandler(),
             optionToPass: '-J-Dnetbeans.logger.console='
         },
-        [configKeys.vscodeTheme]: {
+        [builtInConfigKeys.vscodeTheme]: {
             value: isDarkColorThemeHandler() ? 'com.formdev.flatlaf.FlatDarkLaf' : null,
             optionToPass: ['--laf']
         },
