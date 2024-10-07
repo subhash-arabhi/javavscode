@@ -35,38 +35,23 @@ const launchNbcode = (): void => {
 }
 
 const establishConnection = () => new Promise<StreamInfo>((resolve, reject) => {
+    launchNbcode();
     const nbProcess = globalVars.nbProcessManager?.getProcess();
     const nbProcessManager = globalVars.nbProcessManager;
 
     if (!nbProcessManager || !nbProcess) {
         reject();
         return;
-    } else {
-        try {
-            const server = connectToServer(nbProcess);
-            if (server) {
-                resolve({
-                    reader: server,
-                    writer: server
-                });
-            }
-        } catch (err) {
-            reject(err);
-            globalVars.nbProcessManager?.disconnect();
-            return;
-        }
     }
 
     LOGGER.log(`LSP server launching: ${nbProcessManager.getProcessId()}`);
     LOGGER.log(`LSP server user directory: ${getUserConfigLaunchOptionsDefaults()[configKeys.userdir].value}`);
-    
-    nbProcess.on('data', function (d: any) {
-        const status = processOnDataHandler(nbProcessManager, d.toString(), true);
-        if (status) {
-            resolve(d.toString());
-        }
+
+    let status = false;
+    nbProcess.on('data', (d: any) => {
+        status = processOnDataHandler(nbProcessManager, d.toString(), true);
     });
-    nbProcess.stderr?.on('data', function (d: any) {
+    nbProcess.stderr?.on('data', (d: any) => {
         processOnDataHandler(nbProcessManager, d.toString(), false);
     });
     nbProcess.on('close', (code: number) => {
@@ -75,6 +60,20 @@ const establishConnection = () => new Promise<StreamInfo>((resolve, reject) => {
             reject(status);
         }
     });
+
+    try {
+        const server = connectToServer(nbProcess);
+        if (server) {
+            resolve({
+                reader: server,
+                writer: server
+            });
+        }
+    } catch (err) {
+        reject(err);
+        globalVars.nbProcessManager?.disconnect();
+        return;
+    }
 });
 
 const connectToServer = (nbProcess: ChildProcess): net.Socket | void => {
@@ -161,6 +160,5 @@ const enableDisableNbjavacModule = () => {
 
 export const initializeServer = () => {
     enableDisableNbjavacModule();
-    launchNbcode();
-    return establishConnection();
+    return establishConnection;
 }

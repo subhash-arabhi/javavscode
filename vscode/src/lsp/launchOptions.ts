@@ -5,25 +5,25 @@ import { userDefinedLaunchOptionsType } from "./types"
 
 export const getUserConfigLaunchOptionsDefaults = (): userDefinedLaunchOptionsType => {
     return {
-        [configKeys.verbose]: {
-            value: isNbJavacDisabledHandler(),
-            optionToPass: '-J-Dnetbeans.logger.console='
-        },
         [configKeys.jdkHome]: {
             value: jdkHomeValueHandler(),
             optionToPass: ['--jdkhome']
         },
+        [configKeys.userdir]: {
+            value: userdirHandler(),
+            optionToPass: ['--userdir']
+        },
         [configKeys.disableProjSearchLimit]: {
             value: projectSearchRootsValueHandler(),
-            optionToPass: '-J-Dproject.limitScanRoot='
+            optionToPass: '-J-Dproject.limitScanRoot=',
+            encloseInvertedComma: true
+        },[configKeys.verbose]: {
+            value: isNbJavacDisabledHandler(),
+            optionToPass: '-J-Dnetbeans.logger.console='
         },
         [configKeys.vscodeTheme]: {
             value: isDarkColorThemeHandler() ? 'com.formdev.flatlaf.FlatDarkLaf' : null,
             optionToPass: ['--laf']
-        },
-        [configKeys.userdir]: {
-            value: userdirHandler(),
-            optionToPass: ['--userdir']
         },
         [configKeys.lspVmOptions]: {
             value: lspServerVmOptionsHandler()
@@ -36,19 +36,26 @@ const extraLaunchOptions = ["--modules",
     "-J-XX:PerfMaxStringConstLength=10240",
     "--locale", l10n.nbLocaleCode(),
     "--start-java-language-server=listen-hash:0",
-    "--start-java-debug-adapter-server=listen-hash:0"];
+    "--start-java-debug-adapter-server=listen-hash:0",
+    // "-J-Xdebug",
+    // "-J-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000"
+    ];
 
 const prepareUserConfigLaunchOptions = (): string[] => {
     const launchOptions: string[] = [];
     const userConfigLaunchOptionsDefaults = getUserConfigLaunchOptionsDefaults();
     Object.values(userConfigLaunchOptionsDefaults).forEach(userConfig => {
-        const { value, optionToPass } = userConfig;
+        const { value, optionToPass, encloseInvertedComma } = userConfig;
         if (value) {
             if (!optionToPass && Array.isArray(value)) {
                 launchOptions.push(...value);
             }
             else if (typeof (optionToPass) === "string") {
-                launchOptions.push(`${optionToPass}${value}`);
+                if(encloseInvertedComma){
+                    launchOptions.push(`${optionToPass}"${value}"`);
+                } else{
+                    launchOptions.push(`${optionToPass}${value}`);
+                }
             } else if (Array.isArray(optionToPass)) {
                 const arg: string[] = [...optionToPass, value];
                 launchOptions.push(...arg);

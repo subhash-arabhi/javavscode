@@ -57,7 +57,8 @@ export const lspServerVmOptionsHandler = (): string[] => {
 }
 
 export const isDarkColorThemeHandler = (): boolean => {
-    const themeName = workspace.getConfiguration(configKeys.vscodeTheme);
+    // const themeName = getConfigurationValue(configKeys.vscodeTheme);
+    const themeName = workspace.getConfiguration('workbench')?.get('colorTheme');
     if (!themeName) {
         return false;
     }

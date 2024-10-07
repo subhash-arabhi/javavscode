@@ -1,6 +1,7 @@
 export type userDefinedLaunchOptionsType = {
     [key: string]: {
         value: any,
-        optionToPass?: string | string[]
+        optionToPass?: string | string[],
+        encloseInvertedComma?: boolean
     }
 };
