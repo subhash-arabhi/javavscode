@@ -6,6 +6,7 @@ import { registerNavigationCommands } from "./navigation";
 import { registerWebviewCommands } from "./webViews";
 import { registerBuildOperationCommands } from "./buildOperations";
 import { registerRefactorCommands } from "./refactor";
+import { registerDebugCommands } from "./debug";
 
 type ICommandModules = Record<string, ICommand[]>;
 
@@ -15,7 +16,8 @@ const commandModules: ICommandModules = {
     navigation: registerNavigationCommands,
     webview: registerWebviewCommands,
     buildOperations: registerBuildOperationCommands,
-    refactor: registerRefactorCommands
+    refactor: registerRefactorCommands,
+    debug: registerDebugCommands
 }
 
 export const subscribeCommands = (context: ExtensionContext) => {
