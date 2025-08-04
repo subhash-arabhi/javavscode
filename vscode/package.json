@@ -248,8 +248,8 @@
 					"markdownDescription": "%jdk.configuration.telemetry.enabled.markdownDescription%",
 					"default": false,
 					"tags": [
-                        "telemetry"
-          			]
+						"telemetry"
+					]
 				},
 				"jdk.java.completion.commit.chars": {
 					"type": "array",
@@ -782,6 +782,39 @@
 			{
 				"fileMatch": "package.json",
 				"url": "./schemas/package.schema.json"
+			}
+		],
+		"walkthroughs": [
+			{
+				"id": "oracle-java.gettingStarted",
+				"title": "Oracle Java: Getting Started",
+				"description": "Learn how to use Oracle Java Platform Extension.",
+				"steps": [
+					{
+						"id": "createProject",
+						"title": "Create a Java Project",
+						"description": "**Use** `Java: New Project...` from the Command Palette to scaffold a new Maven or Gradle project.\n[Create new projcet](command:jdk.workspace.newproject)",
+						"media": {
+							"image": "images/walkthroughs/new_project.png",
+							"altText": "Scaffold a new Java project"
+						},
+						"completionEvents": [
+							"onCommand:jdk.workspace.newproject"
+						]
+					},
+					{
+						"id": "downloadJdk",
+						"title": "Download a JDK",
+						"description": "Download and add a new JDK directly from VS Code.\n[Download, install, and Use JDK](command:jdk.download.jdk)",
+						"media": {
+							"image": "images/walkthroughs/jdk_download.png",
+							"altText": "Download jdk image"
+						},
+						"completionEvents": [
+							"onCommand:jdk.download.jdk"
+						]
+					}
+				]
 			}
 		]
 	},
